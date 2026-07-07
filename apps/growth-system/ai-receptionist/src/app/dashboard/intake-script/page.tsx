@@ -10,7 +10,7 @@ type IntakeScriptPageProps = {
 	}>;
 };
 
-async function getBusinessId() {
+async function getOrganizationId() {
 	const supabase = await createClient();
 
 	const {
@@ -22,8 +22,8 @@ async function getBusinessId() {
 	}
 
 	const { data: membership } = await supabase
-		.from('business_members')
-		.select('business_id')
+		.from('organization_members')
+		.select('organization_id')
 		.eq('user_id', user.id)
 		.limit(1)
 		.maybeSingle();
@@ -32,7 +32,7 @@ async function getBusinessId() {
 		redirect('/onboarding');
 	}
 
-	return membership.business_id;
+	return membership.organization_id;
 }
 
 export default async function IntakeScriptPage({
@@ -40,14 +40,14 @@ export default async function IntakeScriptPage({
 }: IntakeScriptPageProps) {
 	const params = await searchParams;
 	const supabase = await createClient();
-	const businessId = await getBusinessId();
+	const organizationId = await getOrganizationId();
 
 	const { data: script } = await supabase
 		.from('intake_scripts')
 		.select(
 			'id, name, industry, prompt, required_fields, custom_questions, is_active',
 		)
-		.eq('business_id', businessId)
+		.eq('organization_id', organizationId)
 		.eq('is_active', true)
 		.limit(1)
 		.maybeSingle();

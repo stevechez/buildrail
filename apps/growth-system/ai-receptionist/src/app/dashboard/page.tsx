@@ -6,7 +6,7 @@ import { AiGuardrailsCard } from '@/components/dashboard/ai-guardrails-card';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowRight, DollarSign, PhoneCall, Target, Timer } from 'lucide-react';
 
-async function getCurrentBusiness() {
+async function getCurrentOrganization() {
 	const supabase = await createClient();
 
 	const {
@@ -16,30 +16,30 @@ async function getCurrentBusiness() {
 	if (!user) return null;
 
 	const { data: membership } = await supabase
-		.from('business_members')
-		.select('business_id')
+		.from('organization_members')
+		.select('organization_id')
 		.eq('user_id', user.id)
 		.limit(1)
 		.maybeSingle();
 
 	if (!membership) return null;
 
-	const { data: business } = await supabase
-		.from('businesses')
+	const { data: organization } = await supabase
+		.from('organizations')
 		.select(
 			'id, name, industry, business_phone, notification_email, notification_phone',
 		)
-		.eq('id', membership.business_id)
+		.eq('id', membership.organization_id)
 		.single();
 
-	return business;
+	return organization;
 }
 
 export default async function DashboardPage() {
 	const supabase = await createClient();
-	const business = await getCurrentBusiness();
+	const organization = await getCurrentOrganization();
 
-	const businessId = business?.id ?? null;
+	const organizationId = organization?.id ?? null;
 
 	const [
 		{ count: leadCount },
@@ -52,34 +52,34 @@ export default async function DashboardPage() {
 		{ data: bookedLeads },
 	] = await Promise.all([
 		supabase
-			.from('leads')
+			.from('receptionist_leads')
 			.select('*', { count: 'exact', head: true })
-			.eq('business_id', businessId),
+			.eq('organization_id', organizationId),
 
 		supabase
 			.from('calls')
 			.select('*', { count: 'exact', head: true })
-			.eq('business_id', businessId),
+			.eq('organization_id', organizationId),
 
 		supabase
-			.from('leads')
+			.from('receptionist_leads')
 			.select(
 				'id, caller_name, caller_phone, service_needed, status, urgency, estimated_value, created_at',
 			)
-			.eq('business_id', businessId)
+			.eq('organization_id', organizationId)
 			.order('created_at', { ascending: false })
 			.limit(5),
 
 		supabase
 			.from('receptionist_settings')
 			.select('assigned_phone_number, greeting')
-			.eq('business_id', businessId)
+			.eq('organization_id', organizationId)
 			.maybeSingle(),
 
 		supabase
 			.from('intake_scripts')
 			.select('id')
-			.eq('business_id', businessId)
+			.eq('organization_id', organizationId)
 			.eq('is_active', true)
 			.limit(1)
 			.maybeSingle(),
@@ -87,22 +87,22 @@ export default async function DashboardPage() {
 		supabase
 			.from('subscriptions')
 			.select('id, status')
-			.eq('business_id', businessId)
+			.eq('organization_id', organizationId)
 			.in('status', ['active', 'on_trial'])
 			.limit(1)
 			.maybeSingle(),
 
 		supabase
-			.from('leads')
+			.from('receptionist_leads')
 			.select('id')
-			.eq('business_id', businessId)
+			.eq('organization_id', organizationId)
 			.limit(1)
 			.maybeSingle(),
 
 		supabase
-			.from('leads')
+			.from('receptionist_leads')
 			.select('booked_value, estimated_value')
-			.eq('business_id', businessId)
+			.eq('organization_id', organizationId)
 			.eq('status', 'booked'),
 	]);
 
@@ -123,9 +123,9 @@ export default async function DashboardPage() {
 	const needsFollowUp =
 		recentLeads?.filter(lead => lead.status === 'new').length ?? 0;
 
-	const hasBusinessProfile = Boolean(business?.name);
-	const hasNotificationEmail = Boolean(business?.notification_email);
-	const hasNotificationPhone = Boolean(business?.notification_phone);
+	const hasBusinessProfile = Boolean(organization?.name);
+	const hasNotificationEmail = Boolean(organization?.notification_email);
+	const hasNotificationPhone = Boolean(organization?.notification_phone);
 	const hasIntakeScript = Boolean(intakeScript);
 	const hasAssignedPhoneNumber = Boolean(settings?.assigned_phone_number);
 	const hasSubscription = Boolean(subscription);

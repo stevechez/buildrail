@@ -28,7 +28,7 @@ function getOptionalMoneyValue(formData: FormData, key: string) {
 	return value;
 }
 
-async function getCurrentBusinessId() {
+async function getCurrentOrganizationId() {
 	const supabase = await createClient();
 
 	const {
@@ -40,8 +40,8 @@ async function getCurrentBusinessId() {
 	}
 
 	const { data: membership } = await supabase
-		.from('business_members')
-		.select('business_id')
+		.from('organization_members')
+		.select('organization_id')
 		.eq('user_id', user.id)
 		.limit(1)
 		.maybeSingle();
@@ -50,7 +50,7 @@ async function getCurrentBusinessId() {
 		redirect('/onboarding');
 	}
 
-	return membership.business_id;
+	return membership.organization_id;
 }
 
 export async function updateLeadStatusAction(formData: FormData) {
@@ -62,13 +62,13 @@ export async function updateLeadStatusAction(formData: FormData) {
 	}
 
 	const supabase = await createClient();
-	const businessId = await getCurrentBusinessId();
+	const organizationId = await getCurrentOrganizationId();
 
 	const { error } = await supabase
-		.from('leads')
+		.from('receptionist_leads')
 		.update({ status })
 		.eq('id', leadId)
-		.eq('business_id', businessId);
+		.eq('organization_id', organizationId);
 
 	if (error) {
 		redirect(
@@ -95,7 +95,7 @@ export async function updateLeadOutcomeAction(formData: FormData) {
 	const bookedValue = getOptionalMoneyValue(formData, 'booked_value');
 
 	const supabase = await createClient();
-	const businessId = await getCurrentBusinessId();
+	const organizationId = await getCurrentOrganizationId();
 
 	const updatePayload: {
 		status: string;
@@ -108,10 +108,10 @@ export async function updateLeadOutcomeAction(formData: FormData) {
 	};
 
 	const { error } = await supabase
-		.from('leads')
+		.from('receptionist_leads')
 		.update(updatePayload)
 		.eq('id', leadId)
-		.eq('business_id', businessId);
+		.eq('organization_id', organizationId);
 
 	if (error) {
 		redirect(

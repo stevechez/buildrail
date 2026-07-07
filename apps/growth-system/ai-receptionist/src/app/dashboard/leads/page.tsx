@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CreateDemoLeadButton } from './create-demo-lead-button';
 
-async function getBusinessId() {
+async function getOrganizationId() {
 	const supabase = await createClient();
 
 	const {
@@ -14,25 +14,25 @@ async function getBusinessId() {
 	if (!user) return null;
 
 	const { data: membership } = await supabase
-		.from('business_members')
-		.select('business_id')
+		.from('organization_members')
+		.select('organization_id')
 		.eq('user_id', user.id)
 		.limit(1)
 		.maybeSingle();
 
-	return membership?.business_id ?? null;
+	return membership?.organization_id ?? null;
 }
 
 export default async function LeadsPage() {
 	const supabase = await createClient();
-	const businessId = await getBusinessId();
+	const organizationId = await getOrganizationId();
 
 	const { data: leads } = await supabase
-		.from('leads')
+		.from('receptionist_leads')
 		.select(
 			'id, caller_name, caller_phone, service_needed, urgency, status, summary, created_at',
 		)
-		.eq('business_id', businessId)
+		.eq('organization_id', organizationId)
 		.order('created_at', { ascending: false });
 
 	return (

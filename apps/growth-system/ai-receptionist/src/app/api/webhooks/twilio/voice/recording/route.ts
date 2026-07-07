@@ -1,6 +1,7 @@
 // src/app/api/webhooks/twilio/voice/recording/route.ts
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import type { Database } from '@/types/supabase';
 
 export const runtime = 'nodejs';
 
@@ -12,7 +13,7 @@ function getServiceSupabase() {
 		throw new Error('Missing Supabase service role env vars');
 	}
 
-	return createClient(supabaseUrl, serviceRoleKey);
+	return createClient<Database>(supabaseUrl, serviceRoleKey);
 }
 
 function twimlResponse(message: string) {
@@ -86,7 +87,7 @@ export async function POST(request: Request) {
 
 	if (leadId) {
 		const { error: leadError } = await supabase
-			.from('leads')
+			.from('receptionist_leads')
 			.update({
 				summary: recordingUrl
 					? 'Real missed call captured with voicemail recording. Follow up with this caller as soon as possible.'

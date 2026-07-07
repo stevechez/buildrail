@@ -1,6 +1,7 @@
 // src/app/api/webhooks/twilio/voice/route.ts
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import type { Database } from '@/types/supabase';
 import { sendLeadEmailNotification } from '@/lib/notifications/send-lead-email';
 import { sendLeadSmsNotification } from '@/lib/notifications/send-lead-sms';
 
@@ -23,7 +24,7 @@ function getServiceSupabase() {
 		throw new Error('Missing Supabase service role env vars');
 	}
 
-	return createClient(supabaseUrl, serviceRoleKey);
+	return createClient<Database>(supabaseUrl, serviceRoleKey);
 }
 
 function twimlResponse(message: string, recordingActionUrl?: string) {
@@ -66,14 +67,14 @@ export async function POST(request: Request) {
 
 	const supabase = getServiceSupabase();
 
-	const { data: business, error: businessError } = await supabase
-		.from('businesses')
+	const { data: organization, error: organizationError } = await supabase
+		.from('organizations')
 		.select('id, name, twilio_phone_number')
 		.eq('twilio_phone_number', toPhone)
 		.maybeSingle();
 
-	if (businessError || !business) {
-		console.error('Business lookup failed:', businessError);
+	if (organizationError || !organization) {
+		console.error('Business lookup failed:', organizationError);
 
 		return twimlResponse(
 			'Thanks for calling. The team is unavailable right now, but your call has been received.',
@@ -81,9 +82,9 @@ export async function POST(request: Request) {
 	}
 
 	const { data: lead, error: leadError } = await supabase
-		.from('leads')
+		.from('receptionist_leads')
 		.insert({
-			business_id: business.id,
+			organization_id: organization.id,
 			caller_name: 'Unknown caller',
 			caller_phone: fromPhone,
 			caller_email: null,
@@ -112,7 +113,7 @@ export async function POST(request: Request) {
 	const { data: call, error: callError } = await supabase
 		.from('calls')
 		.insert({
-			business_id: business.id,
+			organization_id: organization.id,
 			lead_id: lead.id,
 			provider: 'twilio',
 			provider_call_id: callSid,
@@ -141,13 +142,13 @@ export async function POST(request: Request) {
 	Promise.all([
 		sendLeadEmailNotification({
 			supabase,
-			businessId: business.id,
+			organizationId: organization.id,
 			leadId: lead.id,
 			callId: call.id,
 		}),
 		sendLeadSmsNotification({
 			supabase,
-			businessId: business.id,
+			organizationId: organization.id,
 			leadId: lead.id,
 			callId: call.id,
 		}),

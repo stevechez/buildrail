@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getBillingPlan } from '@/lib/billing/plans';
 
-async function getCurrentBusiness() {
+async function getCurrentOrganization() {
 	const supabase = await createClient();
 
 	const {
@@ -16,8 +16,8 @@ async function getCurrentBusiness() {
 	}
 
 	const { data: membership, error: membershipError } = await supabase
-		.from('business_members')
-		.select('business_id')
+		.from('organization_members')
+		.select('organization_id')
 		.eq('user_id', user.id)
 		.limit(1)
 		.maybeSingle();
@@ -26,17 +26,17 @@ async function getCurrentBusiness() {
 		return { error: 'No business found' as const };
 	}
 
-	const { data: business, error: businessError } = await supabase
-		.from('businesses')
+	const { data: organization, error: organizationError } = await supabase
+		.from('organizations')
 		.select('id, name, notification_email')
-		.eq('id', membership.business_id)
+		.eq('id', membership.organization_id)
 		.single();
 
-	if (businessError || !business) {
+	if (organizationError || !organization) {
 		return { error: 'Business not found' as const };
 	}
 
-	return { user, business };
+	return { user, organization };
 }
 
 export async function POST(request: Request) {
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
 		);
 	}
 
-	const current = await getCurrentBusiness();
+	const current = await getCurrentOrganization();
 
 	if ('error' in current) {
 		return NextResponse.json({ error: current.error }, { status: 401 });
@@ -84,9 +84,9 @@ export async function POST(request: Request) {
 					attributes: {
 						checkout_data: {
 							email: current.user.email,
-							name: current.business.name,
+							name: current.organization.name,
 							custom: {
-								business_id: current.business.id,
+								organization_id: current.organization.id,
 								user_id: current.user.id,
 								plan_key: plan.key,
 							},

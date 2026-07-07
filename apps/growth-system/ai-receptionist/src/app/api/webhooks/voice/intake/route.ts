@@ -1,13 +1,14 @@
 // src/app/api/webhooks/voice/intake/route.ts
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import type { Database } from '@/types/supabase';
 import { sendLeadEmailNotification } from '@/lib/notifications/send-lead-email';
 import { sendLeadSmsNotification } from '@/lib/notifications/send-lead-sms';
 
 export const runtime = 'nodejs';
 
 type VoiceIntakePayload = {
-	business_id?: string;
+	organization_id?: string;
 
 	provider?: string;
 	provider_call_id?: string;
@@ -44,7 +45,7 @@ function getServiceSupabase() {
 		throw new Error('Missing Supabase service role env vars');
 	}
 
-	return createClient(supabaseUrl, serviceRoleKey);
+	return createClient<Database>(supabaseUrl, serviceRoleKey);
 }
 
 function verifyVoiceWebhook(request: Request) {
@@ -84,29 +85,29 @@ export async function POST(request: Request) {
 		return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
 	}
 
-	if (!payload.business_id) {
+	if (!payload.organization_id) {
 		return NextResponse.json(
-			{ error: 'business_id is required' },
+			{ error: 'organization_id is required' },
 			{ status: 400 },
 		);
 	}
 
 	const supabase = getServiceSupabase();
 
-	const { data: business, error: businessError } = await supabase
-		.from('businesses')
+	const { data: organization, error: organizationError } = await supabase
+		.from('organizations')
 		.select('id')
-		.eq('id', payload.business_id)
+		.eq('id', payload.organization_id)
 		.single();
 
-	if (businessError || !business) {
+	if (organizationError || !organization) {
 		return NextResponse.json({ error: 'Business not found' }, { status: 404 });
 	}
 
 	const { data: lead, error: leadError } = await supabase
-		.from('leads')
+		.from('receptionist_leads')
 		.insert({
-			business_id: payload.business_id,
+			organization_id: payload.organization_id,
 
 			caller_name: payload.caller_name ?? null,
 			caller_phone: payload.from_phone ?? null,
@@ -137,7 +138,7 @@ export async function POST(request: Request) {
 	const { data: call, error: callError } = await supabase
 		.from('calls')
 		.insert({
-			business_id: payload.business_id,
+			organization_id: payload.organization_id,
 			lead_id: lead.id,
 
 			provider: payload.provider ?? 'unknown',
@@ -169,14 +170,14 @@ export async function POST(request: Request) {
 
 	const emailNotificationResult = await sendLeadEmailNotification({
 		supabase,
-		businessId: payload.business_id,
+		organizationId: payload.organization_id,
 		leadId: lead.id,
 		callId: call.id,
 	});
 
 	const smsNotificationResult = await sendLeadSmsNotification({
 		supabase,
-		businessId: payload.business_id,
+		organizationId: payload.organization_id,
 		leadId: lead.id,
 		callId: call.id,
 	});

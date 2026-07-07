@@ -16,7 +16,7 @@ type SettingsPageProps = {
 	}>;
 };
 
-async function getBusinessId() {
+async function getOrganizationId() {
 	const supabase = await createClient();
 
 	const {
@@ -28,8 +28,8 @@ async function getBusinessId() {
 	}
 
 	const { data: membership } = await supabase
-		.from('business_members')
-		.select('business_id')
+		.from('organization_members')
+		.select('organization_id')
 		.eq('user_id', user.id)
 		.limit(1)
 		.maybeSingle();
@@ -38,7 +38,7 @@ async function getBusinessId() {
 		redirect('/onboarding');
 	}
 
-	return membership.business_id;
+	return membership.organization_id;
 }
 
 export default async function SettingsPage({
@@ -46,14 +46,14 @@ export default async function SettingsPage({
 }: SettingsPageProps) {
 	const params = await searchParams;
 	const supabase = await createClient();
-	const businessId = await getBusinessId();
+	const organizationId = await getOrganizationId();
 
-	const { data: business } = await supabase
-		.from('businesses')
+	const { data: organization } = await supabase
+		.from('organizations')
 		.select(
 			'name, industry, website_url, business_phone, notification_email, notification_phone',
 		)
-		.eq('id', businessId)
+		.eq('id', organizationId)
 		.single();
 
 	const { data: settings } = await supabase
@@ -61,7 +61,7 @@ export default async function SettingsPage({
 		.select(
 			'greeting, fallback_message, service_area, escalation_instructions, forwarding_number, assigned_phone_number, ai_personality, after_hours_enabled, missed_call_enabled',
 		)
-		.eq('business_id', businessId)
+		.eq('organization_id', organizationId)
 		.single();
 
 	return (
@@ -100,7 +100,7 @@ export default async function SettingsPage({
 							<Input
 								id="business_name"
 								name="business_name"
-								defaultValue={business?.name ?? ''}
+								defaultValue={organization?.name ?? ''}
 								required
 							/>
 						</div>
@@ -111,7 +111,7 @@ export default async function SettingsPage({
 								<Input
 									id="industry"
 									name="industry"
-									defaultValue={business?.industry ?? ''}
+									defaultValue={organization?.industry ?? ''}
 									placeholder="movers"
 								/>
 							</div>
@@ -121,7 +121,7 @@ export default async function SettingsPage({
 								<Input
 									id="website_url"
 									name="website_url"
-									defaultValue={business?.website_url ?? ''}
+									defaultValue={organization?.website_url ?? ''}
 									placeholder="https://example.com"
 								/>
 							</div>
@@ -133,7 +133,7 @@ export default async function SettingsPage({
 								<Input
 									id="business_phone"
 									name="business_phone"
-									defaultValue={business?.business_phone ?? ''}
+									defaultValue={organization?.business_phone ?? ''}
 									placeholder="+1 650 555 1212"
 								/>
 							</div>
@@ -144,7 +144,7 @@ export default async function SettingsPage({
 									id="notification_email"
 									name="notification_email"
 									type="email"
-									defaultValue={business?.notification_email ?? ''}
+									defaultValue={organization?.notification_email ?? ''}
 									placeholder="owner@example.com"
 								/>
 							</div>
@@ -154,7 +154,7 @@ export default async function SettingsPage({
 								<Input
 									id="notification_phone"
 									name="notification_phone"
-									defaultValue={business?.notification_phone ?? ''}
+									defaultValue={organization?.notification_phone ?? ''}
 									placeholder="+1 650 555 1212"
 								/>
 							</div>

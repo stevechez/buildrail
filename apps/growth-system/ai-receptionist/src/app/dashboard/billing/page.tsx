@@ -11,7 +11,7 @@ type BillingPageProps = {
 	}>;
 };
 
-async function getBusinessId() {
+async function getOrganizationId() {
 	const supabase = await createClient();
 
 	const {
@@ -21,24 +21,24 @@ async function getBusinessId() {
 	if (!user) return null;
 
 	const { data: membership } = await supabase
-		.from('business_members')
-		.select('business_id')
+		.from('organization_members')
+		.select('organization_id')
 		.eq('user_id', user.id)
 		.limit(1)
 		.maybeSingle();
 
-	return membership?.business_id ?? null;
+	return membership?.organization_id ?? null;
 }
 
 export default async function BillingPage({ searchParams }: BillingPageProps) {
 	const params = await searchParams;
 	const supabase = await createClient();
-	const businessId = await getBusinessId();
+	const organizationId = await getOrganizationId();
 
 	const { data: subscription } = await supabase
 		.from('subscriptions')
 		.select('plan_name, status, renews_at, ends_at')
-		.eq('business_id', businessId)
+		.eq('organization_id', organizationId)
 		.order('created_at', { ascending: false })
 		.limit(1)
 		.maybeSingle();

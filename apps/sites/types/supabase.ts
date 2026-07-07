@@ -156,64 +156,94 @@ export type Database = {
       }
       leads: {
         Row: {
-          business_name: string | null
+          contacted_at: string | null
           created_at: string
           email: string | null
-          estimate_max: number | null
-          estimate_min: number | null
-          existing_website: string | null
+          estimate_max: number
+          estimate_min: number
           finish: string | null
           id: string
           name: string
           phone: string | null
           remodel_rooms: string[] | null
           scope: string | null
-          service_area: string | null
           size: string | null
           source: string
-          status: string
-          target_clients: string | null
-          trade: string | null
         }
         Insert: {
-          business_name?: string | null
+          contacted_at?: string | null
           created_at?: string
           email?: string | null
-          estimate_max?: number | null
-          estimate_min?: number | null
-          existing_website?: string | null
+          estimate_max?: number
+          estimate_min?: number
           finish?: string | null
           id?: string
           name: string
           phone?: string | null
           remodel_rooms?: string[] | null
           scope?: string | null
-          service_area?: string | null
           size?: string | null
           source?: string
-          status?: string
-          target_clients?: string | null
-          trade?: string | null
         }
         Update: {
-          business_name?: string | null
+          contacted_at?: string | null
           created_at?: string
           email?: string | null
-          estimate_max?: number | null
-          estimate_min?: number | null
-          existing_website?: string | null
+          estimate_max?: number
+          estimate_min?: number
           finish?: string | null
           id?: string
           name?: string
           phone?: string | null
           remodel_rooms?: string[] | null
           scope?: string | null
-          service_area?: string | null
           size?: string | null
+          source?: string
+        }
+        Relationships: []
+      }
+      site_leads: {
+        Row: {
+          business_name: string
+          created_at: string
+          email: string | null
+          existing_website: string | null
+          full_name: string
+          id: string
+          phone: string | null
+          service_area: string | null
+          source: string
+          status: string
+          target_clients: string | null
+          trade: string
+        }
+        Insert: {
+          business_name: string
+          created_at?: string
+          email?: string | null
+          existing_website?: string | null
+          full_name: string
+          id?: string
+          phone?: string | null
+          service_area?: string | null
           source?: string
           status?: string
           target_clients?: string | null
-          trade?: string | null
+          trade: string
+        }
+        Update: {
+          business_name?: string
+          created_at?: string
+          email?: string | null
+          existing_website?: string | null
+          full_name?: string
+          id?: string
+          phone?: string | null
+          service_area?: string | null
+          source?: string
+          status?: string
+          target_clients?: string | null
+          trade?: string
         }
         Relationships: []
       }

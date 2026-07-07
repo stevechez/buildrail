@@ -4,7 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 type SendLeadEmailInput = {
   supabase: SupabaseClient;
-  businessId: string;
+  organizationId: string;
   leadId: string;
   callId?: string | null;
 };
@@ -24,7 +24,7 @@ type LeadRecord = {
   created_at: string;
 };
 
-type BusinessRecord = {
+type OrganizationRecord = {
   id: string;
   name: string;
   notification_email: string | null;
@@ -33,26 +33,26 @@ type BusinessRecord = {
 
 export async function sendLeadEmailNotification({
   supabase,
-  businessId,
+  organizationId,
   leadId,
   callId = null,
 }: SendLeadEmailInput) {
-  const { data: business, error: businessError } = await supabase
-    .from("businesses")
+  const { data: organization, error: organizationError } = await supabase
+    .from("organizations")
     .select("id, name, notification_email, notification_phone")
-    .eq("id", businessId)
-    .single<BusinessRecord>();
+    .eq("id", organizationId)
+    .single<OrganizationRecord>();
 
-  if (businessError || !business) {
+  if (organizationError || !organization) {
     return {
       ok: false,
-      error: businessError?.message ?? "Business not found",
+      error: organizationError?.message ?? "Business not found",
     };
   }
 
-  if (!business.notification_email) {
+  if (!organization.notification_email) {
     await supabase.from("notifications").insert({
-      business_id: businessId,
+      organization_id: organizationId,
       lead_id: leadId,
       call_id: callId,
       channel: "email",
@@ -70,12 +70,12 @@ export async function sendLeadEmailNotification({
   }
 
   const { data: lead, error: leadError } = await supabase
-    .from("leads")
+    .from("receptionist_leads")
     .select(
       "id, caller_name, caller_phone, caller_email, service_needed, job_date, job_location, destination_location, summary, urgency, estimated_value, created_at"
     )
     .eq("id", leadId)
-    .eq("business_id", businessId)
+    .eq("organization_id", organizationId)
     .single<LeadRecord>();
 
   if (leadError || !lead) {
@@ -90,11 +90,11 @@ export async function sendLeadEmailNotification({
 
   if (!resendApiKey || !from) {
     await supabase.from("notifications").insert({
-      business_id: businessId,
+      organization_id: organizationId,
       lead_id: leadId,
       call_id: callId,
       channel: "email",
-      recipient: business.notification_email,
+      recipient: organization.notification_email,
       subject: "New LunchBreak AI lead",
       body: "Resend environment variables are missing.",
       status: "failed",
@@ -116,7 +116,7 @@ export async function sendLeadEmailNotification({
   const textBody = [
     `New lead captured by LunchBreak AI`,
     ``,
-    `Business: ${business.name}`,
+    `Business: ${organization.name}`,
     `Caller: ${lead.caller_name || "Unknown"}`,
     `Phone: ${lead.caller_phone || "Not provided"}`,
     `Email: ${lead.caller_email || "Not provided"}`,
@@ -169,18 +169,18 @@ export async function sendLeadEmailNotification({
 
   const { data, error } = await resend.emails.send({
     from,
-    to: business.notification_email,
+    to: organization.notification_email,
     subject,
     text: textBody,
     html: htmlBody,
   });
 
   await supabase.from("notifications").insert({
-    business_id: businessId,
+    organization_id: organizationId,
     lead_id: leadId,
     call_id: callId,
     channel: "email",
-    recipient: business.notification_email,
+    recipient: organization.notification_email,
     subject,
     body: textBody,
     status: error ? "failed" : "sent",

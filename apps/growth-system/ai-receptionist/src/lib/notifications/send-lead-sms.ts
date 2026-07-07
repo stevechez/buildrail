@@ -3,7 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 type SendLeadSmsInput = {
 	supabase: SupabaseClient;
-	businessId: string;
+	organizationId: string;
 	leadId: string;
 	callId?: string | null;
 };
@@ -17,7 +17,7 @@ type LeadRecord = {
 	urgency: string | null;
 };
 
-type BusinessRecord = {
+type OrganizationRecord = {
 	id: string;
 	name: string;
 	notification_phone: string | null;
@@ -25,28 +25,28 @@ type BusinessRecord = {
 
 export async function sendLeadSmsNotification({
 	supabase,
-	businessId,
+	organizationId,
 	leadId,
 	callId = null,
 }: SendLeadSmsInput) {
-	const { data: business, error: businessError } = await supabase
-		.from('businesses')
+	const { data: organization, error: organizationError } = await supabase
+		.from('organizations')
 		.select('id, name, notification_phone')
-		.eq('id', businessId)
-		.single<BusinessRecord>();
+		.eq('id', organizationId)
+		.single<OrganizationRecord>();
 
-	if (businessError || !business) {
+	if (organizationError || !organization) {
 		return {
 			ok: false,
-			error: businessError?.message ?? 'Business not found',
+			error: organizationError?.message ?? 'Business not found',
 		};
 	}
 
 	const { data: lead, error: leadError } = await supabase
-		.from('leads')
+		.from('receptionist_leads')
 		.select('id, caller_name, caller_phone, service_needed, summary, urgency')
 		.eq('id', leadId)
-		.eq('business_id', businessId)
+		.eq('organization_id', organizationId)
 		.single<LeadRecord>();
 
 	if (leadError || !lead) {
@@ -56,9 +56,9 @@ export async function sendLeadSmsNotification({
 		};
 	}
 
-	if (!business.notification_phone) {
+	if (!organization.notification_phone) {
 		await supabase.from('notifications').insert({
-			business_id: businessId,
+			organization_id: organizationId,
 			lead_id: leadId,
 			call_id: callId,
 			channel: 'sms',
@@ -91,11 +91,11 @@ export async function sendLeadSmsNotification({
 	// Placeholder until Twilio/Telnyx is connected.
 	// This logs the SMS that would be sent.
 	await supabase.from('notifications').insert({
-		business_id: businessId,
+		organization_id: organizationId,
 		lead_id: leadId,
 		call_id: callId,
 		channel: 'sms',
-		recipient: business.notification_phone,
+		recipient: organization.notification_phone,
 		subject: 'New LunchBreak AI lead',
 		body,
 		status: 'pending',
@@ -105,7 +105,7 @@ export async function sendLeadSmsNotification({
 	return {
 		ok: true,
 		mode: 'logged_only',
-		recipient: business.notification_phone,
+		recipient: organization.notification_phone,
 	};
 }
 

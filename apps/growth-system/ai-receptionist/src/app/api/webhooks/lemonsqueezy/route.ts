@@ -2,6 +2,7 @@
 import crypto from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import type { Database } from '@/types/supabase';
 
 export const runtime = 'nodejs';
 
@@ -13,7 +14,7 @@ function getServiceSupabase() {
 		throw new Error('Missing Supabase service role env vars');
 	}
 
-	return createClient(supabaseUrl, serviceRoleKey);
+	return createClient<Database>(supabaseUrl, serviceRoleKey);
 }
 
 function verifySignature(rawBody: string, signature: string | null) {
@@ -49,11 +50,11 @@ export async function POST(request: Request) {
 
 	const attributes = payload?.data?.attributes ?? {};
 	const subscriptionId = String(payload?.data?.id ?? '');
-	const businessId = custom.business_id;
+	const organizationId = custom.organization_id;
 
-	if (!businessId) {
+	if (!organizationId) {
 		return NextResponse.json(
-			{ error: 'Missing business_id in custom data' },
+			{ error: 'Missing organization_id in custom data' },
 			{ status: 400 },
 		);
 	}
@@ -90,7 +91,7 @@ export async function POST(request: Request) {
 
 		const { error } = await supabase.from('subscriptions').upsert(
 			{
-				business_id: businessId,
+				organization_id: organizationId,
 				lemon_squeezy_customer_id: customerId,
 				lemon_squeezy_subscription_id: subscriptionId,
 				lemon_squeezy_order_id: orderId,

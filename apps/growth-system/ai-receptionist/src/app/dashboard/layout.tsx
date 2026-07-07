@@ -19,8 +19,8 @@ export default async function DashboardLayout({
 	}
 
 	const { data: membership } = await supabase
-		.from('business_members')
-		.select('business_id')
+		.from('organization_members')
+		.select('organization_id')
 		.eq('user_id', user.id)
 		.limit(1)
 		.maybeSingle();
@@ -29,19 +29,19 @@ export default async function DashboardLayout({
 		redirect('/onboarding');
 	}
 
-	const { data: business } = await supabase
-		.from('businesses')
+	const { data: organization } = await supabase
+		.from('organizations')
 		.select('id, name')
-		.eq('id', membership.business_id)
+		.eq('id', membership.organization_id)
 		.single();
 
-	if (!business) {
+	if (!organization) {
 		redirect('/onboarding');
 	}
 
 	return (
 		<div className="flex min-h-screen bg-slate-100">
-			<DashboardNav businessName={business.name} />
+			<DashboardNav businessName={organization.name} />
 			<main className="flex-1 p-8">{children}</main>
 		</div>
 	);

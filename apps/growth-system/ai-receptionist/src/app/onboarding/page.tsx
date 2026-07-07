@@ -38,8 +38,8 @@ export default async function OnboardingPage({
 	}
 
 	const { data: membership } = await supabase
-		.from('business_members')
-		.select('business_id')
+		.from('organization_members')
+		.select('organization_id')
 		.eq('user_id', user.id)
 		.maybeSingle();
 

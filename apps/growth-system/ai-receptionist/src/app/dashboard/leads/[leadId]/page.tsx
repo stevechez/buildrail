@@ -26,7 +26,7 @@ type LeadDetailPageProps = {
 	}>;
 };
 
-async function getCurrentBusinessId() {
+async function getCurrentOrganizationId() {
 	const supabase = await createClient();
 
 	const {
@@ -38,8 +38,8 @@ async function getCurrentBusinessId() {
 	}
 
 	const { data: membership } = await supabase
-		.from('business_members')
-		.select('business_id')
+		.from('organization_members')
+		.select('organization_id')
 		.eq('user_id', user.id)
 		.limit(1)
 		.maybeSingle();
@@ -48,7 +48,7 @@ async function getCurrentBusinessId() {
 		redirect('/onboarding');
 	}
 
-	return membership.business_id;
+	return membership.organization_id;
 }
 
 function formatMoney(value?: number | null) {
@@ -65,10 +65,10 @@ export default async function LeadDetailPage({
 	const query = await searchParams;
 
 	const supabase = await createClient();
-	const businessId = await getCurrentBusinessId();
+	const organizationId = await getCurrentOrganizationId();
 
 	const { data: lead, error: leadError } = await supabase
-		.from('leads')
+		.from('receptionist_leads')
 		.select(
 			`
       id,
@@ -101,7 +101,7 @@ export default async function LeadDetailPage({
     `,
 		)
 		.eq('id', leadId)
-		.eq('business_id', businessId)
+		.eq('organization_id', organizationId)
 		.maybeSingle();
 
 	if (leadError) {

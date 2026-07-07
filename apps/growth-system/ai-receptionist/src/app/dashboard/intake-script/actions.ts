@@ -9,7 +9,7 @@ function getString(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
 }
 
-async function getCurrentBusinessId() {
+async function getCurrentOrganizationId() {
   const supabase = await createClient();
 
   const {
@@ -21,8 +21,8 @@ async function getCurrentBusinessId() {
   }
 
   const { data: membership } = await supabase
-    .from("business_members")
-    .select("business_id")
+    .from("organization_members")
+    .select("organization_id")
     .eq("user_id", user.id)
     .limit(1)
     .maybeSingle();
@@ -31,7 +31,7 @@ async function getCurrentBusinessId() {
     redirect("/onboarding");
   }
 
-  return membership.business_id;
+  return membership.organization_id;
 }
 
 function parseLines(value: string) {
@@ -42,7 +42,7 @@ function parseLines(value: string) {
 }
 
 export async function updateIntakeScriptAction(formData: FormData) {
-  const businessId = await getCurrentBusinessId();
+  const organizationId = await getCurrentOrganizationId();
   const supabase = await createClient();
 
   const scriptId = getString(formData, "script_id");
@@ -74,7 +74,7 @@ export async function updateIntakeScriptAction(formData: FormData) {
       is_active: true,
     })
     .eq("id", scriptId)
-    .eq("business_id", businessId);
+    .eq("organization_id", organizationId);
 
   if (error) {
     redirect(`/dashboard/intake-script?error=${encodeURIComponent(error.message)}`);

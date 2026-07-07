@@ -1,3 +1,19 @@
+-- ⚠️  SUPERSEDED — kept only as historical context, do not run.
+-- The businesses/business_members convergence this file describes assumed
+-- there were existing businesses/business_members rows to migrate. When
+-- this was actually investigated against the live project (see
+-- docs/engineering/stabilization-log.md's "Sprint 3 (cont'd)" entry), no
+-- such tables existed at all — apps/estimator turned out to have no real
+-- dependency on them (a stale generated types file was the only trace),
+-- and apps/growth-system/ai-receptionist's schema had never been applied
+-- to any live database. Since there was no data to converge, that app's
+-- schema was instead created fresh, directly on organizations/
+-- organization_members (see the ai_receptionist_schema_on_organizations
+-- migration applied straight to the live project, not committed as a
+-- file here — this repo's migrations are authored as drafts/history, the
+-- live schema is the source of truth via Supabase). This file remains for
+-- the design reasoning it documents, not as something to execute.
+--
 -- ─── Platform migration: converge businesses/business_members onto organizations/profiles ──
 --
 -- Context (see docs/engineering/stabilization-log.md and

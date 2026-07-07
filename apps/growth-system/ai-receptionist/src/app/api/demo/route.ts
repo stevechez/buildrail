@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
-async function getCurrentBusinessId() {
+async function getCurrentOrganizationId() {
 	const supabase = await createClient();
 
 	const {
@@ -15,8 +15,8 @@ async function getCurrentBusinessId() {
 	}
 
 	const { data: membership, error: membershipError } = await supabase
-		.from('business_members')
-		.select('business_id')
+		.from('organization_members')
+		.select('organization_id')
 		.eq('user_id', user.id)
 		.limit(1)
 		.maybeSingle();
@@ -25,21 +25,21 @@ async function getCurrentBusinessId() {
 		return { error: 'No business found' as const };
 	}
 
-	return { businessId: membership.business_id };
+	return { organizationId: membership.organization_id };
 }
 
 export async function POST() {
 	const supabase = await createClient();
-	const current = await getCurrentBusinessId();
+	const current = await getCurrentOrganizationId();
 
 	if ('error' in current) {
 		return NextResponse.json({ error: current.error }, { status: 401 });
 	}
 
 	const { data: lead, error: leadError } = await supabase
-		.from('leads')
+		.from('receptionist_leads')
 		.insert({
-			business_id: current.businessId,
+			organization_id: current.organizationId,
 			caller_name: 'Steve Maciaszek',
 			caller_phone: '+1 650 555 1212',
 			caller_email: 'steve@example.com',
@@ -67,7 +67,7 @@ export async function POST() {
 	}
 
 	const { error: callError } = await supabase.from('calls').insert({
-		business_id: current.businessId,
+		organization_id: current.organizationId,
 		lead_id: lead.id,
 		provider: 'demo',
 		provider_call_id: `demo-${crypto.randomUUID()}`,

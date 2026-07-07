@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-async function getBusinessId() {
+async function getOrganizationId() {
 	const supabase = await createClient();
 
 	const {
@@ -15,8 +15,8 @@ async function getBusinessId() {
 	}
 
 	const { data: membership } = await supabase
-		.from('business_members')
-		.select('business_id')
+		.from('organization_members')
+		.select('organization_id')
 		.eq('user_id', user.id)
 		.limit(1)
 		.maybeSingle();
@@ -25,19 +25,19 @@ async function getBusinessId() {
 		redirect('/onboarding');
 	}
 
-	return membership.business_id;
+	return membership.organization_id;
 }
 
 export default async function NotificationsPage() {
 	const supabase = await createClient();
-	const businessId = await getBusinessId();
+	const organizationId = await getOrganizationId();
 
 	const { data: notifications } = await supabase
 		.from('notifications')
 		.select(
 			'id, channel, recipient, subject, status, error_message, sent_at, created_at',
 		)
-		.eq('business_id', businessId)
+		.eq('organization_id', organizationId)
 		.order('created_at', { ascending: false })
 		.limit(50);
 

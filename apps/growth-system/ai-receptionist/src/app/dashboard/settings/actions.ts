@@ -13,7 +13,7 @@ function getBoolean(formData: FormData, key: string) {
 	return formData.get(key) === 'on';
 }
 
-async function getCurrentBusinessId() {
+async function getCurrentOrganizationId() {
 	const supabase = await createClient();
 
 	const {
@@ -25,8 +25,8 @@ async function getCurrentBusinessId() {
 	}
 
 	const { data: membership } = await supabase
-		.from('business_members')
-		.select('business_id')
+		.from('organization_members')
+		.select('organization_id')
 		.eq('user_id', user.id)
 		.limit(1)
 		.maybeSingle();
@@ -35,11 +35,11 @@ async function getCurrentBusinessId() {
 		redirect('/onboarding');
 	}
 
-	return membership.business_id;
+	return membership.organization_id;
 }
 
 export async function updateReceptionistSettingsAction(formData: FormData) {
-	const businessId = await getCurrentBusinessId();
+	const organizationId = await getCurrentOrganizationId();
 	const supabase = await createClient();
 
 	const businessName = getString(formData, 'business_name');
@@ -62,8 +62,8 @@ export async function updateReceptionistSettingsAction(formData: FormData) {
 		redirect('/dashboard/settings?error=Business name is required');
 	}
 
-	const { error: businessError } = await supabase
-		.from('businesses')
+	const { error: organizationError } = await supabase
+		.from('organizations')
 		.update({
 			name: businessName,
 			industry: industry || null,
@@ -72,11 +72,11 @@ export async function updateReceptionistSettingsAction(formData: FormData) {
 			notification_email: notificationEmail || null,
 			notification_phone: notificationPhone || null,
 		})
-		.eq('id', businessId);
+		.eq('id', organizationId);
 
-	if (businessError) {
+	if (organizationError) {
 		redirect(
-			`/dashboard/settings?error=${encodeURIComponent(businessError.message)}`,
+			`/dashboard/settings?error=${encodeURIComponent(organizationError.message)}`,
 		);
 	}
 
@@ -91,7 +91,7 @@ export async function updateReceptionistSettingsAction(formData: FormData) {
 			after_hours_enabled: afterHoursEnabled,
 			missed_call_enabled: missedCallEnabled,
 		})
-		.eq('business_id', businessId);
+		.eq('organization_id', organizationId);
 
 	if (settingsError) {
 		redirect(

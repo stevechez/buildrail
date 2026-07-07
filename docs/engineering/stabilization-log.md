@@ -220,3 +220,103 @@ ones") pointed at Sites.
   Billing (Stripe), a staff-facing lead dashboard, and deployment
   verification are the next concrete steps toward Phase 10 completion for
   this product.
+
+---
+
+# Sprint 3 (cont'd) — businesses -> organizations migration
+
+Date: 2026-07-07 (same session, continued)
+
+Picked up the "Database migrations" gap flagged as the biggest open Track A
+item: the drafted `businesses`/`business_members` -> `organizations`/
+`profiles` convergence (`packages/database/migrations/0001_*.sql`) had
+never been applied. Investigating it against the live project changed the
+scope significantly from what that draft assumed.
+
+## What investigation found
+
+- **apps/estimator: false alarm.** Its real application code (not its
+  stale generated `types/supabase.ts`) has zero runtime dependency on
+  `businesses`/`business_members` — its `/admin` auth is just "is a user
+  logged in," nothing organization-scoped. No migration needed.
+- **A real regression from earlier this session.** apps/sites' `/estimate`
+  widget and apps/estimator's own instant-estimate flow correctly share one
+  `leads` table (both built on `@buildrail/estimator-ui`) — that part was
+  right. But adding Sites' `/start` business-intake columns onto that same
+  table (nullable `estimate_min`/`estimate_max`) would have broken
+  Estimator's admin dashboard, which sums those fields as non-null numbers.
+  Fixed: `leads` reverted to Estimator's exact original shape (plus a
+  missing `contacted_at` column its own code already wrote to), and Sites'
+  `/start` submissions moved to their own `site_leads` table.
+- **apps/growth-system/ai-receptionist ("LunchBreak AI") was the real
+  target, and "convergence" was the wrong frame for it.** There was no
+  data to converge — `businesses`/`business_members` never existed in the
+  live project at all, for either app. The one source of ground truth
+  (a types file generated from the old shared project) didn't even
+  contain a `leads` table matching ai-receptionist's own code (no
+  `caller_name`, no `business_id`) — meaning this product's schema may
+  never have been deployed anywhere, even before this session touched
+  anything.
+
+## What shipped
+
+- Built ai-receptionist's entire schema fresh, directly on
+  `organizations`/`organization_members` (no separate businesses model):
+  `calls`, `receptionist_leads` (renamed from a table this app's code
+  calls "leads" — renamed specifically to avoid colliding with apps/sites'
+  and apps/estimator's *different* `leads` table, both living in the same
+  Supabase project's public schema), `intake_scripts`,
+  `receptionist_settings`, `notifications`, `subscriptions`,
+  `beta_requests`. Column shapes were reconstructed from ai-receptionist's
+  actual `.from()`/`.select()`/`.insert()`/`.update()` calls, not guessed.
+  `organizations` gained the product-specific columns the old draft
+  migration had proposed (vertical, service_area, status, website_url,
+  notification_email/phone, business_phone, twilio_phone_number,
+  timezone).
+- RLS on every organization-scoped table reuses the existing
+  `is_org_member()`/`is_org_admin()` helpers — no new
+  `is_business_owner/admin/member()` functions, per "shared problems need
+  shared solutions."
+- Recreated the `create_onboarding_business` RPC (referenced by
+  `src/app/onboarding/actions.ts` but never actually applied to any live
+  project) with the *same name and parameter signature*, so that one call
+  site needed zero code changes — it now creates an organization +
+  `owner` organization_members row + default `receptionist_settings` row
+  in one transaction instead of a business + business_members row.
+  Restricted its `EXECUTE` grant to `authenticated`/`service_role` after
+  the security advisor flagged it as callable by `anon` (it depends on
+  `auth.uid()`, so anon calls would have failed anyway, but the grant is
+  tightened regardless).
+- Rewrote ai-receptionist's application code (~20 files under
+  `src/app/**` and `src/lib/notifications/**`) via a scoped subagent given
+  an exact rename table: `business_members`→`organization_members`,
+  `businesses`→`organizations`, `business_id`→`organization_id`,
+  `businessId`→`organizationId` (plus matching function renames like
+  `getCurrentBusinessId`→`getCurrentOrganizationId`), and this app's own
+  `leads`→`receptionist_leads`. Added a real generated
+  `src/types/supabase.ts` (this app had none before) wired into its
+  Supabase client factories. Verified independently afterward (not just
+  trusting the subagent's report): grepped for zero remaining
+  `business_id`/`businessId`/`business_members` references, `tsc --noEmit`
+  clean, `eslint .` clean. `next build` fails only on a Google Fonts
+  network fetch (`fonts.googleapis.com` unreachable from this sandbox) —
+  unrelated to the rename, would not occur on Vercel.
+- Marked `packages/database/migrations/0001_converge_businesses_to_organizations.sql`
+  as superseded (kept for its design reasoning, not meant to be run).
+
+## Not done yet
+
+- `beta_requests` intentionally preserves a pre-existing product-level gap:
+  its dashboard page lets any authenticated user view/update the whole
+  waitlist, not scoped to their own organization (it never was, even
+  before this session — beta signups aren't organization-scoped data).
+  Not fixed here since it's a product behavior question, not something to
+  silently change as part of a schema rename.
+- Billing (`subscriptions`/Lemon Squeezy), Twilio call routing, and the
+  onboarding vertical-specific greeting logic were not functionally
+  tested end-to-end (no Lemon Squeezy/Twilio credentials in this
+  sandbox) — only verified to typecheck/build/lint correctly against the
+  new schema.
+- The two pre-existing `is_org_admin()`/`is_org_member()` security-definer
+  advisor warnings (callable by `authenticated` via RPC) are still
+  unresolved, unrelated to this migration.
