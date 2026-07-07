@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BuildRail Estimator — Embed Test</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f8fafc;
+      margin: 0;
+      padding: 40px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h1 { font-size: 1.25rem; color: #0f172a; margin-bottom: 8px; }
+    p  { font-size: 0.875rem; color: #64748b; margin-bottom: 32px; }
+  </style>
+</head>
+<body>
+  <h1>Embed test harness</h1>
+  <p>Loads <code>dist/estimator.js</code> and calls <code>BuildRailEstimator.init()</code> — run <code>pnpm build</code> first.</p>
+
+  <div id="buildrail-estimator"></div>
+
+  <script src="./dist/estimator.js"></script>
+  <script>
+    BuildRailEstimator.init({
+      target: '#buildrail-estimator',
+      // Fill in your Supabase credentials to test lead capture:
+      // supabaseUrl: 'https://uyytsakioaexrcopgqee.supabase.co',
+      // supabaseKey: 'YOUR_ANON_KEY',
+      source: 'embed-test',
+    });
+  </script>
+</body>
+</html>

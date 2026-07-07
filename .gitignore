@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Build output
+.next/
+dist/
+build/
+out/
+
+# Logs
+*.log
+
+# Temporary files
+_tmp_*
+*.tmp
+
+# OS files
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Testing
+coverage/
+
+# Vercel
+.vercel/
+
+# Workspace diagnostics
+workspace-report.json

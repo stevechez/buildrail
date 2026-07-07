@@ -1,0 +1,5 @@
+/*
+ * Tailwind utilities only — no Preflight base reset so we don't clobber
+ * the host page's global styles.
+ */
+@tailwind utilities;

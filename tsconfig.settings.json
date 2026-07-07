@@ -1,0 +1,11 @@
+{
+	"compilerOptions": {
+		"strict": false,
+		"noImplicitAny": false,
+		"strictNullChecks": false,
+		"noUnusedLocals": false,
+		"noUnusedParameters": false,
+		"preserveConstEnums": true,
+		"skipLibCheck": true
+	}
+}

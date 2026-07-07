@@ -1,0 +1,270 @@
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600&display=swap');
+@import "tailwindcss";
+
+/* ─── Design Tokens ─────────────────────────────────────── */
+:root {
+  --gold:          #C9A84C;
+  --gold-dim:      #7A6228;
+  --gold-glow:     rgba(201,168,76,0.12);
+  --bg:            #0B0B0B;
+  --surface:       #131313;
+  --surface-2:     #1A1A1A;
+  --surface-3:     #1F1F1F;
+  --border:        rgba(255,255,255,0.06);
+  --border-2:      rgba(255,255,255,0.10);
+  --text:          #EDE8DE;
+  --text-muted:    #696969;
+  --text-secondary:#A09080;
+}
+
+/* ─── Reset & Base ──────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+h1,h2,h3,h4 { line-height: 1.15; }
+
+/* ─── Typography ────────────────────────────────────────── */
+.font-display { font-family: 'Instrument Serif', Georgia, serif; }
+
+.eyebrow {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+/* ─── Layout ────────────────────────────────────────────── */
+.container {
+  max-width: 880px;
+  margin: 0 auto;
+}
+
+section {
+  padding: 100px 32px;
+  border-bottom: 1px solid var(--border);
+}
+
+@media (max-width: 768px) {
+  section { padding: 72px 20px; }
+}
+
+/* ─── Nav ───────────────────────────────────────────────── */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  height: 64px;
+  padding: 0 32px;
+  background: rgba(11,11,11,0.80);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@media (max-width: 600px) {
+  nav { padding: 0 20px; }
+}
+
+/* ─── Buttons ───────────────────────────────────────────── */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--gold);
+  color: #0B0B0B;
+  font-weight: 600;
+  font-size: 0.875rem;
+  letter-spacing: 0.015em;
+  padding: 13px 26px;
+  border-radius: 6px;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: filter 0.18s, transform 0.15s;
+  white-space: nowrap;
+}
+.btn-primary:hover { filter: brightness(1.08); transform: translateY(-1px); }
+.btn-primary:active { transform: translateY(0); }
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  padding: 13px 22px;
+  border-radius: 6px;
+  text-decoration: none;
+  border: 1px solid var(--border-2);
+  cursor: pointer;
+  transition: border-color 0.18s, color 0.18s;
+  white-space: nowrap;
+}
+.btn-ghost:hover { border-color: rgba(255,255,255,0.22); color: var(--text); }
+
+/* ─── Cards ─────────────────────────────────────────────── */
+.asset-card {
+  border-left: 2px solid var(--gold);
+  background: var(--surface);
+  border-radius: 0 8px 8px 0;
+  padding: 26px 28px;
+  transition: background 0.2s;
+}
+.asset-card:hover { background: var(--surface-2); }
+
+.niche-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 30px;
+  transition: border-color 0.2s, background 0.2s;
+}
+.niche-card:hover { border-color: var(--gold-dim); background: var(--surface-2); }
+
+.package-box {
+  background: var(--surface);
+  border: 1px solid var(--border-2);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.sample-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+.sample-card:hover { border-color: var(--border-2); }
+
+/* ─── Grids ─────────────────────────────────────────────── */
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.grid-2-loose {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px 56px;
+}
+.grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 680px) {
+  .grid-2, .grid-2-loose { grid-template-columns: 1fr; }
+  .grid-4 { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 400px) {
+  .grid-4 { grid-template-columns: 1fr; }
+}
+
+/* ─── Check items ───────────────────────────────────────── */
+.check-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+.check-icon {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: rgba(201,168,76,0.13);
+  border: 1px solid var(--gold-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* ─── Step number ───────────────────────────────────────── */
+.step-num {
+  font-family: 'Instrument Serif', serif;
+  font-size: 2.8rem;
+  color: var(--gold);
+  line-height: 1;
+  opacity: 0.9;
+}
+
+/* ─── FAQ ───────────────────────────────────────────────── */
+.faq-item { border-bottom: 1px solid var(--border); padding: 22px 0; }
+.faq-btn {
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding: 0;
+  text-align: left;
+}
+
+/* ─── Trust bar ─────────────────────────────────────────── */
+.trust-bar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 18px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 40px;
+  flex-wrap: wrap;
+}
+.trust-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  letter-spacing: 0.03em;
+}
+
+/* ─── Highlight box ─────────────────────────────────────── */
+.highlight-box {
+  background: var(--gold-glow);
+  border: 1px solid rgba(201,168,76,0.18);
+  border-radius: 8px;
+  padding: 22px 26px;
+}
+
+/* ─── Tag pill ──────────────────────────────────────────── */
+.tag-pill {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: rgba(201,168,76,0.1);
+  border: 1px solid rgba(201,168,76,0.25);
+  color: var(--gold);
+  border-radius: 4px;
+  padding: 2px 7px;
+}
+
+/* ─── Scrollbar ─────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: #2A2A2A; border-radius: 3px; }

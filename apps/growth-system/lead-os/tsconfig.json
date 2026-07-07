@@ -1,0 +1,35 @@
+{
+	"extends": "../../../tsconfig.settings.json",
+	"compilerOptions": {
+		"target": "ES2017",
+		"lib": ["dom", "dom.iterable", "esnext"],
+		"allowJs": true,
+		"skipLibCheck": true,
+		"strict": false, // This is correct, TS is loose here
+		"noEmit": true,
+		"esModuleInterop": true,
+		"module": "esnext",
+		"moduleResolution": "bundler",
+		"resolveJsonModule": true,
+		"isolatedModules": true,
+		"jsx": "react-jsx",
+		"incremental": true,
+		"plugins": [
+			{
+				"name": "next"
+			}
+		],
+		"paths": {
+			"@/*": ["./*"] // 👈 FIX: Changed from ./src/* to ./ *
+		}
+	},
+	"include": [
+		".",
+		"next-env.d.ts",
+		"**/*.ts",
+		"**/*.tsx",
+		".next/types/**/*.ts",
+		"**/*.mts"
+	],
+	"exclude": ["node_modules", ".next", "dist"] // 👈 FIX: Exclude .next and dist so TS doesn't scan build files
+}
