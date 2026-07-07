@@ -1,10 +1,13 @@
 import "server-only";
-import type { FlagType } from "@/types/supabase";
+import type { FlagType, Json } from "@/types/supabase";
 
 export interface ParsedFlag {
   flag_type: FlagType;
   summary: string;
-  details: Record<string, unknown>;
+  // Json, not Record<string, unknown> — this gets written straight into
+  // message_flags.details (jsonb), and the generated Database type types
+  // that column as Json.
+  details: Json;
   confidence: number;
 }
 

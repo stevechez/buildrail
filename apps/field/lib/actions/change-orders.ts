@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { createSupabaseAdminClient } from "@/lib/supabase-admin";
+import { requireCurrentProfile } from "@/lib/current-profile";
 import { getOrCreatePortalUrl } from "@/lib/portal-token";
 import { sendSms } from "@/lib/sms/twilio";
 
@@ -18,26 +19,15 @@ interface CreateChangeOrderInput {
 /** Creates a draft change order from the dashboard, optionally seeded from a flag. */
 export async function createChangeOrder(input: CreateChangeOrderInput) {
   const supabase = await createSupabaseServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated.");
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("organization_id, full_name")
-    .eq("id", user.id)
-    .single();
-  if (!profile) throw new Error("No profile for current user.");
+  const profile = await requireCurrentProfile();
 
   const { data: changeOrder, error } = await supabase
     .from("change_orders")
     .insert({
-      organization_id: profile.organization_id,
+      organization_id: profile.organizationId,
       project_id: input.projectId,
       source_flag_id: input.sourceFlagId ?? null,
-      created_by: user.id,
+      created_by: profile.id,
       title: input.title,
       description: input.description,
       cost_delta_cents: input.costDeltaCents,
@@ -50,9 +40,9 @@ export async function createChangeOrder(input: CreateChangeOrderInput) {
 
   await supabase.from("change_order_events").insert({
     change_order_id: changeOrder.id,
-    organization_id: profile.organization_id,
+    organization_id: profile.organizationId,
     event_type: "created",
-    actor: `office: ${profile.full_name ?? user.email ?? "staff"}`,
+    actor: `office: ${profile.fullName ?? profile.email ?? "staff"}`,
   });
 
   revalidatePath("/dashboard/change-orders");
@@ -66,18 +56,7 @@ export async function createChangeOrder(input: CreateChangeOrderInput) {
  */
 export async function sendChangeOrderForApproval(changeOrderId: string) {
   const supabase = await createSupabaseServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated.");
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("organization_id, full_name")
-    .eq("id", user.id)
-    .single();
-  if (!profile) throw new Error("No profile for current user.");
+  const profile = await requireCurrentProfile();
 
   const { data: changeOrder } = await supabase
     .from("change_orders")
@@ -96,7 +75,7 @@ export async function sendChangeOrderForApproval(changeOrderId: string) {
   }
 
   const portalUrl = await getOrCreatePortalUrl({
-    organizationId: profile.organization_id,
+    organizationId: profile.organizationId,
     projectId: changeOrder.project_id,
   });
 
@@ -116,9 +95,9 @@ export async function sendChangeOrderForApproval(changeOrderId: string) {
 
   await supabase.from("change_order_events").insert({
     change_order_id: changeOrderId,
-    organization_id: profile.organization_id,
+    organization_id: profile.organizationId,
     event_type: "sent",
-    actor: `office: ${profile.full_name ?? user.email ?? "staff"}`,
+    actor: `office: ${profile.fullName ?? profile.email ?? "staff"}`,
   });
 
   revalidatePath("/dashboard/change-orders");
@@ -130,19 +109,7 @@ export async function sendChangeOrderForApproval(changeOrderId: string) {
  * instead, using the admin client since there's no Supabase session there.
  */
 export async function recordOfficeDecision(changeOrderId: string, decision: "approved" | "rejected", note?: string) {
-  const supabase = await createSupabaseServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated.");
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("organization_id, full_name")
-    .eq("id", user.id)
-    .single();
-  if (!profile) throw new Error("No profile for current user.");
+  const profile = await requireCurrentProfile();
 
   const admin = createSupabaseAdminClient();
   await admin
@@ -152,9 +119,9 @@ export async function recordOfficeDecision(changeOrderId: string, decision: "app
 
   await admin.from("change_order_events").insert({
     change_order_id: changeOrderId,
-    organization_id: profile.organization_id,
+    organization_id: profile.organizationId,
     event_type: decision,
-    actor: `office: ${profile.full_name ?? user.email ?? "staff"}`,
+    actor: `office: ${profile.fullName ?? profile.email ?? "staff"}`,
     note,
   });
 

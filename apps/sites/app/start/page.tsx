@@ -1,7 +1,8 @@
 "use client";
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import NavBar from "../components/NavBar";
+import { submitStartForm } from "@/lib/actions/leads";
 
 const BoltIcon = () => (
   <svg className="w-4 h-4 text-void" fill="currentColor" viewBox="0 0 24 24">
@@ -11,6 +12,33 @@ const BoltIcon = () => (
 
 export default function StartPage() {
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError(null);
+    setSubmitting(true);
+
+    const data = new FormData(e.currentTarget);
+    const result = await submitStartForm({
+      fullName: String(data.get("fullName") || ""),
+      businessName: String(data.get("businessName") || ""),
+      phone: String(data.get("phone") || ""),
+      email: String(data.get("email") || ""),
+      serviceArea: String(data.get("serviceArea") || ""),
+      existingWebsite: String(data.get("existingWebsite") || ""),
+      trade: String(data.get("trade") || ""),
+      targetClients: String(data.get("targetClients") || ""),
+    });
+
+    setSubmitting(false);
+    if (result.ok) {
+      setSubmitted(true);
+    } else {
+      setError(result.error || "Something went wrong. Please try again.");
+    }
+  }
 
   return (
     <div className="min-h-screen bg-void">
@@ -34,34 +62,34 @@ export default function StartPage() {
                 <h2 className="text-sm font-bold text-chalk">Your business info</h2>
                 <span className="text-xs text-orange font-mono">Step 1 of 1</span>
               </div>
-              <form className="p-6 space-y-4" onSubmit={(e) => { e.preventDefault(); setSubmitted(true); }}>
+              <form className="p-6 space-y-4" onSubmit={handleSubmit}>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {[
-                    { label: "Your name", placeholder: "Mike Torres", type: "text" },
-                    { label: "Business name", placeholder: "Torres Roofing", type: "text" },
+                    { name: "fullName", label: "Your name", placeholder: "Mike Torres", type: "text" },
+                    { name: "businessName", label: "Business name", placeholder: "Torres Roofing", type: "text" },
                   ].map((f) => (
                     <div key={f.label}>
                       <label className="block text-xs text-fog mb-1.5">{f.label}</label>
-                      <input type={f.type} required placeholder={f.placeholder}
+                      <input name={f.name} type={f.type} required placeholder={f.placeholder}
                         className="w-full bg-void border border-rim text-chalk placeholder-wire text-sm rounded-lg px-4 py-2.5 focus:outline-none focus:border-orange" />
                     </div>
                   ))}
                 </div>
                 {[
-                  { label: "Phone number", placeholder: "(831) 555-0142", type: "tel" },
-                  { label: "Email", placeholder: "mike@torresroofing.com", type: "email" },
-                  { label: "City and state you serve", placeholder: "Santa Cruz, CA", type: "text" },
-                  { label: "Existing website (if any)", placeholder: "torresroofing.com or none", type: "text" },
+                  { name: "phone", label: "Phone number", placeholder: "(831) 555-0142", type: "tel" },
+                  { name: "email", label: "Email", placeholder: "mike@torresroofing.com", type: "email" },
+                  { name: "serviceArea", label: "City and state you serve", placeholder: "Santa Cruz, CA", type: "text" },
+                  { name: "existingWebsite", label: "Existing website (if any)", placeholder: "torresroofing.com or none", type: "text" },
                 ].map((f) => (
                   <div key={f.label}>
                     <label className="block text-xs text-fog mb-1.5">{f.label}</label>
-                    <input type={f.type} placeholder={f.placeholder}
+                    <input name={f.name} type={f.type} placeholder={f.placeholder}
                       className="w-full bg-void border border-rim text-chalk placeholder-wire text-sm rounded-lg px-4 py-2.5 focus:outline-none focus:border-orange" />
                   </div>
                 ))}
                 <div>
                   <label className="block text-xs text-fog mb-1.5">Your trade</label>
-                  <select required defaultValue="" className="w-full bg-void border border-rim text-chalk text-sm rounded-lg px-4 py-2.5 focus:outline-none focus:border-orange appearance-none">
+                  <select name="trade" required defaultValue="" className="w-full bg-void border border-rim text-chalk text-sm rounded-lg px-4 py-2.5 focus:outline-none focus:border-orange appearance-none">
                     <option value="" disabled>Select your trade</option>
                     {["Roofing","Remodeling","HVAC","Plumbing","Electrical","Painting","Landscaping","General contracting","Concrete","Handyman","Other"].map((t) => (
                       <option key={t} value={t}>{t}</option>
@@ -70,11 +98,16 @@ export default function StartPage() {
                 </div>
                 <div>
                   <label className="block text-xs text-fog mb-1.5">What kind of clients do you want to attract?</label>
-                  <textarea required rows={3} placeholder="e.g. High-end homeowners in Santa Cruz willing to pay premium prices for quality work..."
+                  <textarea name="targetClients" required rows={3} placeholder="e.g. High-end homeowners in Santa Cruz willing to pay premium prices for quality work..."
                     className="w-full bg-void border border-rim text-chalk placeholder-wire text-sm rounded-lg px-4 py-2.5 focus:outline-none focus:border-orange resize-none" />
                 </div>
-                <button type="submit" className="w-full bg-orange hover:bg-oranglit text-void font-black py-4 rounded-xl text-base mt-2">
-                  Submit — We&apos;ll contact you within 2 hours →
+                {error && (
+                  <div className="border border-red border-opacity-40 bg-red bg-opacity-5 rounded-lg px-4 py-3">
+                    <p className="text-sm text-red">{error}</p>
+                  </div>
+                )}
+                <button type="submit" disabled={submitting} className="w-full bg-orange hover:bg-oranglit disabled:opacity-60 disabled:cursor-not-allowed text-void font-black py-4 rounded-xl text-base mt-2">
+                  {submitting ? "Submitting…" : "Submit — We’ll contact you within 2 hours →"}
                 </button>
                 <div className="flex flex-wrap justify-center gap-5">
                   {["48-hr delivery guarantee", "One-time $2,499", "You own the site"].map((t) => (

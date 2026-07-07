@@ -20,13 +20,17 @@ export async function createProject(input: CreateProjectInput) {
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated.");
 
-  const { data: profile } = await supabase.from("profiles").select("organization_id").eq("id", user.id).single();
-  if (!profile) throw new Error("No profile for current user.");
+  const { data: membership } = await supabase
+    .from("organization_members")
+    .select("organization_id")
+    .eq("user_id", user.id)
+    .single();
+  if (!membership) throw new Error("No organization membership for current user.");
 
   const { data: project, error } = await supabase
     .from("projects")
     .insert({
-      organization_id: profile.organization_id,
+      organization_id: membership.organization_id,
       name: input.name,
       address: input.address || null,
       client_name: input.clientName || null,
@@ -42,7 +46,7 @@ export async function createProject(input: CreateProjectInput) {
   // client's number itself should immediately route to this project.
   if (input.clientPhone) {
     await supabase.from("contacts").insert({
-      organization_id: profile.organization_id,
+      organization_id: membership.organization_id,
       project_id: project.id,
       phone: input.clientPhone,
       name: input.clientName || null,
@@ -62,11 +66,15 @@ export async function addContact(input: { projectId: string; name?: string; phon
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated.");
 
-  const { data: profile } = await supabase.from("profiles").select("organization_id").eq("id", user.id).single();
-  if (!profile) throw new Error("No profile for current user.");
+  const { data: membership } = await supabase
+    .from("organization_members")
+    .select("organization_id")
+    .eq("user_id", user.id)
+    .single();
+  if (!membership) throw new Error("No organization membership for current user.");
 
   const { error } = await supabase.from("contacts").insert({
-    organization_id: profile.organization_id,
+    organization_id: membership.organization_id,
     project_id: input.projectId,
     phone: input.phone,
     name: input.name || null,

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { getHubLoginUrl } from '@/lib/hub';
 
 const FEATURES = [
 	{
@@ -34,7 +35,7 @@ export default function Home() {
 				</p>
 				<div className="mt-8 flex gap-3">
 					<Button asChild size="lg">
-						<Link href="/login">Get Started Free</Link>
+						<Link href={getHubLoginUrl('/dashboard')}>Get Started Free</Link>
 					</Button>
 				</div>
 

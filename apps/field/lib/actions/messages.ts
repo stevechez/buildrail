@@ -48,13 +48,17 @@ export async function createManualFlag(input: {
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated.");
 
-  const { data: profile } = await supabase.from("profiles").select("organization_id").eq("id", user.id).single();
-  if (!profile) throw new Error("No profile for current user.");
+  const { data: membership } = await supabase
+    .from("organization_members")
+    .select("organization_id")
+    .eq("user_id", user.id)
+    .single();
+  if (!membership) throw new Error("No organization membership for current user.");
 
   if (!input.summary.trim()) throw new Error("Summary is required.");
 
   const { error } = await supabase.from("message_flags").insert({
-    organization_id: profile.organization_id,
+    organization_id: membership.organization_id,
     message_id: input.messageId,
     project_id: input.projectId,
     flag_type: input.flagType,

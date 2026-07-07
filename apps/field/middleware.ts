@@ -1,29 +1,11 @@
-import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { createMiddlewareSupabaseClient } from "@buildrail/database";
+
+import { getHubLoginUrl } from "@/lib/hub";
 
 export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request });
-
-  // Refresh the session on every matched request so it doesn't expire
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          );
-          supabaseResponse = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          );
-        },
-      },
-    }
+  const { supabase, response } = createMiddlewareSupabaseClient(request, () =>
+    NextResponse.next({ request })
   );
 
   const {
@@ -33,25 +15,19 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Protect the office dashboard — everything under /dashboard requires a
-  // logged-in profile. /portal/[token] and /api/sms/inbound stay public;
-  // they're gated by the token check / Twilio signature instead.
+  // logged-in profile. Sign-in happens at the shared hub (apps/app), not
+  // here — see docs/platform/identity-foundation.md and lib/hub.ts.
+  // /portal/[token] and /api/sms/inbound stay public; they're gated by the
+  // token check / Twilio signature instead.
   if (pathname.startsWith("/dashboard")) {
     if (!user) {
-      const loginUrl = request.nextUrl.clone();
-      loginUrl.pathname = "/login";
-      return NextResponse.redirect(loginUrl);
+      return NextResponse.redirect(getHubLoginUrl(request.nextUrl.pathname));
     }
   }
 
-  if (pathname === "/login" && user) {
-    const dashboardUrl = request.nextUrl.clone();
-    dashboardUrl.pathname = "/dashboard";
-    return NextResponse.redirect(dashboardUrl);
-  }
-
-  return supabaseResponse;
+  return response;
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/login", "/auth/callback"],
+  matcher: ["/dashboard/:path*"],
 };

@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+/* ── Coastal Modern palette (per /AI/04-DESIGN-SYSTEM.md), shared with
+   apps/field so the hub and every product feel like one platform ────── */
+:root {
+  --slate-950:   #0B1120;
+  --slate-900:   #0F172A;
+  --slate-850:   #131C2E;
+  --slate-800:   #1A2338;
+  --seafoam:     #2DD4BF;
+  --seafoam-light: #5EEAD4;
+  --seafoam-dark:  #14B8A6;
+  --ocean:       #38BDF8;
+  --ocean-light: #7DD3FC;
+  --white:       #F8FAFC;
+  --white-dim:   #CBD5E1;
+  --muted:       #64748B;
+  --success:     #34D399;
+  --warning:     #FBBF24;
+  --danger:      #F87171;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  background-color: var(--slate-950);
+  color: var(--white);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  margin: 0;
+  padding: 0;
+}
+
+.page-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .page-container { padding: 0 40px; }
+}
+
+.gradient-hero {
+  background: radial-gradient(circle at 20% -10%, rgba(45,212,191,0.12) 0%, transparent 45%),
+              radial-gradient(circle at 100% 10%, rgba(56,189,248,0.10) 0%, transparent 45%),
+              var(--slate-950);
+}
+
+.text-muted { color: var(--muted); }
+.text-seafoam { color: var(--seafoam); }
+.text-ocean { color: var(--ocean); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

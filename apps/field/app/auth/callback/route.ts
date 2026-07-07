@@ -1,27 +1,15 @@
 import { NextResponse } from "next/server";
 
-import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { getHubUrl } from "@/lib/hub";
 
-/** Exchanges a Supabase magic-link code for a session, then lands in the dashboard. */
-export async function GET(req: Request) {
-  const url = new URL(req.url);
-  const code = url.searchParams.get("code");
-
-  if (!code) {
-    return NextResponse.redirect(new URL("/login?error=missing_code", req.url));
-  }
-
-  const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
-
-  if (error) {
-    // Surfaced on /login instead of silently landing on a session-less
-    // /dashboard (which middleware would just bounce back to /login anyway,
-    // with no clue why). Common cause: the browser-side Supabase client
-    // isn't cookie-based — see lib/supabase.ts.
-    console.error("Magic-link code exchange failed:", error.message);
-    return NextResponse.redirect(new URL(`/login?error=${encodeURIComponent(error.message)}`, req.url));
-  }
-
-  return NextResponse.redirect(new URL("/dashboard", req.url));
+/**
+ * Dead route, kept only as a stub because this environment can't delete
+ * files. Magic-link code exchange now always happens at the shared hub's
+ * /auth/callback (apps/app) — see docs/platform/identity-foundation.md and
+ * lib/hub.ts. Nothing in this app links here anymore; if something old
+ * still does, forward it to the hub rather than 404ing or (worse) silently
+ * mishandling a code param this app no longer expects.
+ */
+export async function GET() {
+  return NextResponse.redirect(new URL("/auth/callback", getHubUrl()));
 }

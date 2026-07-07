@@ -1,8 +1,17 @@
-// Hand-written to match supabase/migrations/*.sql.
-// Regenerate with `pnpm gen-types` once a real Supabase project is linked —
-// this file exists so the app type-checks before that project exists
-// (see /AI/12-DECISIONS.md re: sandbox network limitations).
+// Generated with the Supabase MCP's generate_typescript_types against the
+// live 'buildrail' project (qdcfokengexarxitgckp) — see
+// docs/engineering/stabilization-log.md's Phase 4 entry. Regenerate with
+// `pnpm gen-types` (now that a real linked project exists — see
+// /AI/12-DECISIONS.md and /AI/11-TODO.md for why this used to be
+// hand-written) whenever the schema changes.
 
+// `generate_typescript_types` doesn't know about check constraints, so it
+// widens every enum-like column (flag_type, status, direction, kind) to
+// plain `string`. These aliases restore the narrower literal-union typing
+// the hand-written version of this file had, applied below in the Row/
+// Insert/Update shapes for the columns they actually constrain — keep in
+// sync with the `check (... in (...))` constraints in the migrations
+// applied via apply_migration (see docs/engineering/stabilization-log.md).
 export type FlagType =
   | "material_shortage"
   | "schedule_delay"
@@ -17,277 +26,690 @@ export type MessageDirection = "inbound" | "outbound";
 export type ContactKind = "crew" | "foreman" | "client" | "subcontractor";
 export type ProjectStatus = "active" | "on_hold" | "complete" | "archived";
 
-// `Relationships` is required by @supabase/postgrest-js's GenericTable
-// constraint, and must actually describe each FK used in an embedded
-// select (e.g. `.select("*, projects(name)")`) — otherwise the query
-// parser can't resolve the joined shape and the *entire* select result
-// types as `never`, not just the joined field. Kept in sync by hand with
-// supabase/migrations/*.sql until `pnpm gen-types` can run against a real
-// linked project (see /AI/12-DECISIONS.md).
-type NoRelationships = [];
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
 
-export interface Database {
+export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.5"
+  }
   public: {
     Tables: {
-      organizations: {
-        Row: {
-          id: string;
-          created_at: string;
-          name: string;
-          sms_number: string | null;
-        };
-        Insert: Partial<Database["public"]["Tables"]["organizations"]["Row"]> & { name: string };
-        Update: Partial<Database["public"]["Tables"]["organizations"]["Row"]>;
-        Relationships: NoRelationships;
-      };
-      profiles: {
-        Row: {
-          id: string;
-          organization_id: string;
-          created_at: string;
-          full_name: string | null;
-          role: "admin" | "staff";
-        };
-        Insert: Partial<Database["public"]["Tables"]["profiles"]["Row"]> & {
-          id: string;
-          organization_id: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["profiles"]["Row"]>;
-        Relationships: [
-          {
-            foreignKeyName: "profiles_organization_id_fkey";
-            columns: ["organization_id"];
-            isOneToOne: false;
-            referencedRelation: "organizations";
-            referencedColumns: ["id"];
-          }
-        ];
-      };
-      projects: {
-        Row: {
-          id: string;
-          organization_id: string;
-          created_at: string;
-          name: string;
-          address: string | null;
-          client_name: string | null;
-          client_phone: string | null;
-          client_email: string | null;
-          status: ProjectStatus;
-        };
-        Insert: Partial<Database["public"]["Tables"]["projects"]["Row"]> & {
-          organization_id: string;
-          name: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["projects"]["Row"]>;
-        Relationships: NoRelationships;
-      };
-      contacts: {
-        Row: {
-          id: string;
-          organization_id: string;
-          project_id: string | null;
-          created_at: string;
-          name: string | null;
-          phone: string;
-          kind: ContactKind;
-        };
-        Insert: Partial<Database["public"]["Tables"]["contacts"]["Row"]> & {
-          organization_id: string;
-          phone: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["contacts"]["Row"]>;
-        Relationships: NoRelationships;
-      };
-      messages: {
-        Row: {
-          id: string;
-          organization_id: string;
-          project_id: string | null;
-          contact_id: string | null;
-          created_at: string;
-          direction: MessageDirection;
-          channel: "sms" | "mms";
-          from_number: string;
-          to_number: string;
-          body: string;
-          raw_payload: Record<string, unknown> | null;
-          ai_status: "pending" | "processed" | "skipped" | "failed";
-          ai_error: string | null;
-        };
-        Insert: Partial<Database["public"]["Tables"]["messages"]["Row"]> & {
-          organization_id: string;
-          direction: MessageDirection;
-          from_number: string;
-          to_number: string;
-          body: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["messages"]["Row"]>;
-        // `messages_project_id_fkey` here covers `.select("*, projects(name)")`
-        // from the messages table. The reverse embed
-        // `.select("*, message_flags(*)")` resolves from message_flags's own
-        // Relationships entry (its FK to messages, declared below) — adding
-        // it here too made postgrest-js treat it as one-to-one (a message has
-        // *many* flags), so only the projects FK belongs on this side.
-        Relationships: [
-          {
-            foreignKeyName: "messages_project_id_fkey";
-            columns: ["project_id"];
-            isOneToOne: false;
-            referencedRelation: "projects";
-            referencedColumns: ["id"];
-          }
-        ];
-      };
-      message_flags: {
-        Row: {
-          id: string;
-          organization_id: string;
-          message_id: string;
-          project_id: string | null;
-          created_at: string;
-          flag_type: FlagType;
-          summary: string;
-          details: Record<string, unknown>;
-          confidence: number | null;
-          status: FlagStatus;
-          resolved_at: string | null;
-          resolved_by: string | null;
-        };
-        Insert: Partial<Database["public"]["Tables"]["message_flags"]["Row"]> & {
-          organization_id: string;
-          message_id: string;
-          flag_type: FlagType;
-          summary: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["message_flags"]["Row"]>;
-        Relationships: [
-          {
-            foreignKeyName: "message_flags_project_id_fkey";
-            columns: ["project_id"];
-            isOneToOne: false;
-            referencedRelation: "projects";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "message_flags_message_id_fkey";
-            columns: ["message_id"];
-            isOneToOne: false;
-            referencedRelation: "messages";
-            referencedColumns: ["id"];
-          }
-        ];
-      };
-      change_orders: {
-        Row: {
-          id: string;
-          organization_id: string;
-          project_id: string;
-          source_flag_id: string | null;
-          created_by: string | null;
-          created_at: string;
-          title: string;
-          description: string;
-          cost_delta_cents: number;
-          status: ChangeOrderStatus;
-          sent_at: string | null;
-          decided_at: string | null;
-        };
-        Insert: Partial<Database["public"]["Tables"]["change_orders"]["Row"]> & {
-          organization_id: string;
-          project_id: string;
-          title: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["change_orders"]["Row"]>;
-        Relationships: [
-          {
-            foreignKeyName: "change_orders_project_id_fkey";
-            columns: ["project_id"];
-            isOneToOne: false;
-            referencedRelation: "projects";
-            referencedColumns: ["id"];
-          }
-        ];
-      };
       change_order_events: {
         Row: {
-          id: string;
-          change_order_id: string;
-          organization_id: string;
-          created_at: string;
-          event_type: "created" | "sent" | "approved" | "rejected" | "comment";
-          actor: string;
-          note: string | null;
-        };
-        Insert: Partial<Database["public"]["Tables"]["change_order_events"]["Row"]> & {
-          change_order_id: string;
-          organization_id: string;
-          event_type: "created" | "sent" | "approved" | "rejected" | "comment";
-          actor: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["change_order_events"]["Row"]>;
-        Relationships: NoRelationships;
-      };
-      portal_tokens: {
-        Row: {
-          id: string;
-          organization_id: string;
-          project_id: string;
-          created_at: string;
-          token: string;
-          expires_at: string;
-          revoked_at: string | null;
-        };
-        Insert: Partial<Database["public"]["Tables"]["portal_tokens"]["Row"]> & {
-          organization_id: string;
-          project_id: string;
-          token: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["portal_tokens"]["Row"]>;
+          actor: string
+          change_order_id: string
+          created_at: string
+          event_type: string
+          id: string
+          note: string | null
+          organization_id: string
+        }
+        Insert: {
+          actor: string
+          change_order_id: string
+          created_at?: string
+          event_type: string
+          id?: string
+          note?: string | null
+          organization_id: string
+        }
+        Update: {
+          actor?: string
+          change_order_id?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          note?: string | null
+          organization_id?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "portal_tokens_project_id_fkey";
-            columns: ["project_id"];
-            isOneToOne: false;
-            referencedRelation: "projects";
-            referencedColumns: ["id"];
+            foreignKeyName: "change_order_events_change_order_id_fkey"
+            columns: ["change_order_id"]
+            isOneToOne: false
+            referencedRelation: "change_orders"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "portal_tokens_organization_id_fkey";
-            columns: ["organization_id"];
-            isOneToOne: false;
-            referencedRelation: "organizations";
-            referencedColumns: ["id"];
-          }
-        ];
-      };
-      invites: {
+            foreignKeyName: "change_order_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      change_orders: {
         Row: {
-          id: string;
-          organization_id: string;
-          created_at: string;
-          email: string;
-          role: "admin" | "staff";
-          invited_by: string | null;
-          accepted_at: string | null;
-        };
-        Insert: Partial<Database["public"]["Tables"]["invites"]["Row"]> & {
-          organization_id: string;
-          email: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["invites"]["Row"]>;
+          cost_delta_cents: number
+          created_at: string
+          created_by: string | null
+          decided_at: string | null
+          description: string
+          id: string
+          organization_id: string
+          project_id: string
+          sent_at: string | null
+          source_flag_id: string | null
+          status: ChangeOrderStatus
+          title: string
+        }
+        Insert: {
+          cost_delta_cents?: number
+          created_at?: string
+          created_by?: string | null
+          decided_at?: string | null
+          description?: string
+          id?: string
+          organization_id: string
+          project_id: string
+          sent_at?: string | null
+          source_flag_id?: string | null
+          status?: ChangeOrderStatus
+          title: string
+        }
+        Update: {
+          cost_delta_cents?: number
+          created_at?: string
+          created_by?: string | null
+          decided_at?: string | null
+          description?: string
+          id?: string
+          organization_id?: string
+          project_id?: string
+          sent_at?: string | null
+          source_flag_id?: string | null
+          status?: ChangeOrderStatus
+          title?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "invites_organization_id_fkey";
-            columns: ["organization_id"];
-            isOneToOne: false;
-            referencedRelation: "organizations";
-            referencedColumns: ["id"];
-          }
-        ];
-      };
-    };
-    Views: Record<string, never>;
-    Functions: Record<string, never>;
-  };
+            foreignKeyName: "change_orders_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "change_orders_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "change_orders_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "change_orders_source_flag_id_fkey"
+            columns: ["source_flag_id"]
+            isOneToOne: false
+            referencedRelation: "message_flags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contacts: {
+        Row: {
+          created_at: string
+          id: string
+          kind: ContactKind
+          name: string | null
+          organization_id: string
+          phone: string
+          project_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind?: ContactKind
+          name?: string | null
+          organization_id: string
+          phone: string
+          project_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: ContactKind
+          name?: string | null
+          organization_id?: string
+          phone?: string
+          project_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contacts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contacts_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invitations: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          email: string
+          id: string
+          invited_by: string | null
+          organization_id: string
+          role: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          invited_by?: string | null
+          organization_id: string
+          role?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          invited_by?: string | null
+          organization_id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invitations_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invitations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      message_flags: {
+        Row: {
+          confidence: number | null
+          created_at: string
+          details: Json
+          flag_type: FlagType
+          id: string
+          message_id: string
+          organization_id: string
+          project_id: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: FlagStatus
+          summary: string
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string
+          details?: Json
+          flag_type: FlagType
+          id?: string
+          message_id: string
+          organization_id: string
+          project_id?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: FlagStatus
+          summary: string
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string
+          details?: Json
+          flag_type?: FlagType
+          id?: string
+          message_id?: string
+          organization_id?: string
+          project_id?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: FlagStatus
+          summary?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_flags_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_flags_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_flags_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_flags_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          ai_error: string | null
+          ai_status: string
+          body: string
+          channel: string
+          contact_id: string | null
+          created_at: string
+          direction: MessageDirection
+          from_number: string
+          id: string
+          organization_id: string
+          project_id: string | null
+          raw_payload: Json | null
+          to_number: string
+        }
+        Insert: {
+          ai_error?: string | null
+          ai_status?: string
+          body: string
+          channel?: string
+          contact_id?: string | null
+          created_at?: string
+          direction: MessageDirection
+          from_number: string
+          id?: string
+          organization_id: string
+          project_id?: string | null
+          raw_payload?: Json | null
+          to_number: string
+        }
+        Update: {
+          ai_error?: string | null
+          ai_status?: string
+          body?: string
+          channel?: string
+          contact_id?: string | null
+          created_at?: string
+          direction?: MessageDirection
+          from_number?: string
+          id?: string
+          organization_id?: string
+          project_id?: string | null
+          raw_payload?: Json | null
+          to_number?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_members: {
+        Row: {
+          created_at: string
+          id: string
+          organization_id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          organization_id: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          organization_id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_members_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          created_at: string
+          id: string
+          industry: string | null
+          logo: string | null
+          name: string
+          slug: string | null
+          sms_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          industry?: string | null
+          logo?: string | null
+          name: string
+          slug?: string | null
+          sms_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          industry?: string | null
+          logo?: string | null
+          name?: string
+          slug?: string | null
+          sms_number?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      portal_tokens: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          organization_id: string
+          project_id: string
+          revoked_at: string | null
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          organization_id: string
+          project_id: string
+          revoked_at?: string | null
+          token: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          organization_id?: string
+          project_id?: string
+          revoked_at?: string | null
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portal_tokens_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "portal_tokens_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
+      projects: {
+        Row: {
+          address: string | null
+          client_email: string | null
+          client_name: string | null
+          client_phone: string | null
+          created_at: string
+          id: string
+          name: string
+          organization_id: string
+          status: ProjectStatus
+        }
+        Insert: {
+          address?: string | null
+          client_email?: string | null
+          client_name?: string | null
+          client_phone?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          organization_id: string
+          status?: ProjectStatus
+        }
+        Update: {
+          address?: string | null
+          client_email?: string | null
+          client_name?: string | null
+          client_phone?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          organization_id?: string
+          status?: ProjectStatus
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      is_org_admin: { Args: { check_org_id: string }; Returns: boolean }
+      is_org_member: { Args: { check_org_id: string }; Returns: boolean }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
 }
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never

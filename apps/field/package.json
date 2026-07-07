@@ -11,6 +11,9 @@
 		"gen-types": "supabase gen types typescript --linked --schema public > types/supabase.ts"
 	},
 	"dependencies": {
+		"@buildrail/auth": "workspace:*",
+		"@buildrail/database": "workspace:*",
+		"@buildrail/types": "workspace:*",
 		"@supabase/supabase-js": "^2",
 		"@supabase/ssr": "^0.12",
 		"@radix-ui/react-label": "^2.1.10",

@@ -14,7 +14,7 @@ export function InviteForm() {
   function handleSubmit(formData: FormData) {
     setError(null);
     const email = String(formData.get("email") ?? "");
-    const role = (formData.get("role") as "admin" | "staff") ?? "staff";
+    const role = (formData.get("role") as "admin" | "member") ?? "member";
 
     if (!email.trim()) {
       setError("Email is required.");
@@ -38,10 +38,10 @@ export function InviteForm() {
       </div>
       <select
         name="role"
-        defaultValue="staff"
+        defaultValue="member"
         className="h-11 rounded-xl border border-white/10 bg-white/[0.03] px-3 text-sm text-white outline-none focus:border-[var(--seafoam)]/50"
       >
-        <option value="staff">Staff</option>
+        <option value="member">Member</option>
         <option value="admin">Admin</option>
       </select>
       <Button type="submit" disabled={isPending}>

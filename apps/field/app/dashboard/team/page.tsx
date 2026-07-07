@@ -10,15 +10,20 @@ export default async function TeamPage() {
   const supabase = await createSupabaseServerClient();
 
   const [{ data: members }, { data: pendingInvites }] = await Promise.all([
-    supabase.from("profiles").select("id, full_name, role").order("created_at", { ascending: true }),
     supabase
-      .from("invites")
+      .from("organization_members")
+      .select("id, role, created_at, profiles(id, full_name)")
+      .eq("organization_id", profile.organizationId)
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("invitations")
       .select("id, email, role, created_at")
+      .eq("organization_id", profile.organizationId)
       .is("accepted_at", null)
       .order("created_at", { ascending: false }),
   ]);
 
-  const isAdmin = profile.role === "admin";
+  const isAdmin = profile.role === "owner" || profile.role === "admin";
 
   return (
     <div>
@@ -44,12 +49,17 @@ export default async function TeamPage() {
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">Members</h2>
         <Card>
           <CardContent className="divide-y divide-white/5 p-0">
-            {members?.map((member) => (
-              <div key={member.id} className="flex items-center justify-between p-4">
-                <p className="text-sm text-white">{member.full_name || "Unnamed"}</p>
-                <Badge variant={member.role === "admin" ? "seafoam" : "muted"}>{member.role}</Badge>
-              </div>
-            ))}
+            {members?.map((member) => {
+              const memberProfile = Array.isArray(member.profiles) ? member.profiles[0] : member.profiles;
+              return (
+                <div key={member.id} className="flex items-center justify-between p-4">
+                  <p className="text-sm text-white">{memberProfile?.full_name || "Unnamed"}</p>
+                  <Badge variant={member.role === "owner" || member.role === "admin" ? "seafoam" : "muted"}>
+                    {member.role}
+                  </Badge>
+                </div>
+              );
+            })}
           </CardContent>
         </Card>
       </div>
