@@ -12,20 +12,16 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { pathname } = request.nextUrl;
-
-  // Protect the office dashboard — everything under /dashboard requires a
-  // logged-in profile. Sign-in happens at the shared hub (apps/app), not
-  // here — see docs/platform/identity-foundation.md and lib/hub.ts.
-  // /portal/[token] and /api/sms/inbound stay public; they're gated by the
-  // token check / Twilio signature instead.
-  if (pathname.startsWith("/dashboard")) {
+  // Protect the staff lead dashboard — sign-in happens at the shared hub
+  // (apps/app), not a bespoke local login page, per docs/platform/
+  // identity-foundation.md's "one primary service, one login". Everything
+  // else in apps/sites is public marketing/lead-capture.
+  if (request.nextUrl.pathname.startsWith("/admin")) {
     if (!user) {
       // Pass the full absolute URL, not just the pathname — the hub
-      // redirects back to `returnTo` verbatim once signed in, and Field
+      // redirects back to `returnTo` verbatim once signed in, and Sites
       // runs on a different origin/port than the hub, so a bare path
-      // would land the user back on the hub's own origin instead. (Fixed
-      // as part of building apps/sites' /admin — same latent bug, same fix.)
+      // would land the user back on the hub's own origin instead.
       return NextResponse.redirect(getHubLoginUrl(request.nextUrl.href));
     }
   }
@@ -34,5 +30,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*"],
+  matcher: ["/admin/:path*"],
 };

@@ -320,3 +320,66 @@ scope significantly from what that draft assumed.
 - The two pre-existing `is_org_admin()`/`is_org_member()` security-definer
   advisor warnings (callable by `authenticated` via RPC) are still
   unresolved, unrelated to this migration.
+
+---
+
+# Sprint 3 (cont'd) — Sites staff lead dashboard (Customer Support)
+
+Date: 2026-07-07 (same session, continued)
+
+Next Sprint 3 gap tackled for BuildRail Sites' Product Readiness Checklist:
+Customer Support (no way to see submitted leads without going into the
+Supabase dashboard directly).
+
+## What shipped
+
+- **Discovered `leads` and `site_leads` had insert-only RLS.** Both tables
+  only had a public INSERT policy — no SELECT/UPDATE for anyone, which
+  meant apps/estimator's existing `/admin` dashboard has actually been
+  returning zero rows since the `leads` table was created, not just a
+  hypothetical gap for Sites. Added `authenticated`-role SELECT/UPDATE
+  policies to both tables, fixing Estimator's admin page as a side effect.
+- **apps/sites' `/admin`** — a staff lead dashboard listing `site_leads`
+  (business-intake) and `leads` filtered to `source ilike
+  'buildrail-sites%'` (this app's own instant-estimate submissions,
+  without pulling in Estimator's), with inline status/contacted actions
+  via server actions (`lib/actions/admin.ts`). Gated the same way
+  apps/field gates `/dashboard`: `middleware.ts` redirects unauthenticated
+  visitors to the shared hub's `/login`, per "one primary service, one
+  login" — no bespoke local login page.
+- **Found and fixed a latent cross-origin redirect bug** while wiring this
+  up: `getHubLoginUrl(returnPath)` was being called with just a pathname
+  (e.g. `/dashboard`) in both the new Sites code and the existing Field
+  code it was copied from. The hub redirects back to `returnTo` verbatim
+  after auth, and Field/Sites run on different origins/ports than the hub
+  — a bare path would land the user back on the *hub's* origin instead of
+  back on the product they came from. Fixed in both apps: middleware now
+  passes `request.nextUrl.href` (full absolute URL); the two remaining
+  static call sites in apps/field (`app/page.tsx`'s "Get Started Free"
+  link, `app/login/page.tsx`'s redirect) now build an absolute URL via
+  `next/headers`' `headers()` instead of a bare `/dashboard` string.
+- Verified: `pnpm typecheck`/`build`/`lint` clean for both apps/sites and
+  apps/field after the changes.
+
+## Product Readiness Checklist — Sites, updated
+
+| Area             | Status | Notes |
+| ---------------- | ------ | ----- |
+| Customer Support | ✅     | Staff can now review and action every lead from `/admin` without touching the Supabase dashboard directly. |
+
+(Authentication/Organizations/Permissions/Billing/Deployment unchanged from the prior entry.)
+
+## Not done yet / known limitations
+
+- **No "BuildRail staff" role exists in the identity model.** `/admin`'s
+  RLS policies grant read/update to any *authenticated* Supabase user
+  platform-wide, not a staff-only subset — because there's no such concept
+  yet (roles are per-organization: owner/admin/manager/member/viewer).
+  This is not a new regression: apps/estimator's `/admin` has always
+  worked this way (its middleware only checks "is a user logged in"). Both
+  are now consistent and documented rather than silently relied upon, but
+  a real "internal BuildRail staff" concept — separate from customer
+  organization membership — is an open platform question, not something
+  to invent as a side effect of a lead dashboard.
+- No pagination on `/admin` — fine at current volume, will need it once
+  lead counts grow.

@@ -2,8 +2,10 @@
  * URL of the shared BuildRail hub (apps/app) — the one primary login every
  * product redirects to instead of maintaining its own sign-in page (see
  * docs/platform/identity-foundation.md: "one primary service, one login").
- * Defaults to the hub's local dev port; set NEXT_PUBLIC_HUB_URL in
- * production (e.g. https://app.buildrail.app).
+ * apps/sites has no signup/organization flow of its own; /admin here is a
+ * staff-only lead review tool, gated the same way apps/field gates its
+ * dashboard. Defaults to the hub's local dev port; set NEXT_PUBLIC_HUB_URL
+ * in production (e.g. https://app.buildrail.app).
  */
 export function getHubUrl(): string {
   return process.env.NEXT_PUBLIC_HUB_URL ?? "http://localhost:3000";
@@ -11,10 +13,9 @@ export function getHubUrl(): string {
 
 /**
  * Builds a login URL that sends the user back to `returnUrl` once they've
- * signed in at the hub — see apps/app/app/auth/callback/route.ts for the
- * redirect-back side of this. Must be a full absolute URL (e.g.
+ * signed in at the hub. Must be a full absolute URL (e.g.
  * `request.nextUrl.href`), not just a pathname — the hub redirects back to
- * this value verbatim after auth, and Field runs on a different
+ * this value verbatim after auth, and Sites runs on a different
  * origin/port than the hub, so a bare path would land the user back on the
  * hub's own origin instead of here.
  */

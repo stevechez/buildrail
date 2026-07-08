@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { headers } from 'next/headers';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { getHubLoginUrl } from '@/lib/hub';
@@ -18,7 +19,12 @@ const FEATURES = [
 	},
 ];
 
-export default function Home() {
+export default async function Home() {
+	const headersList = await headers();
+	const proto = headersList.get('x-forwarded-proto') ?? 'http';
+	const host = headersList.get('host') ?? 'localhost:3001';
+	const getStartedUrl = getHubLoginUrl(`${proto}://${host}/dashboard`);
+
 	return (
 		<div className="min-h-screen gradient-hero">
 			<div className="page-container flex min-h-screen flex-col items-center justify-center py-24 text-center">
@@ -35,7 +41,7 @@ export default function Home() {
 				</p>
 				<div className="mt-8 flex gap-3">
 					<Button asChild size="lg">
-						<Link href={getHubLoginUrl('/dashboard')}>Get Started Free</Link>
+						<Link href={getStartedUrl}>Get Started Free</Link>
 					</Button>
 				</div>
 

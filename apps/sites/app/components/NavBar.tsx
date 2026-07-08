@@ -38,7 +38,7 @@ export default function NavBar({ stripped = false }: { stripped?: boolean }) {
                 ))}
               </div>
               <div className="hidden md:flex items-center gap-3">
-                <Link href="/start" className="text-sm text-mist hover:text-chalk">Client Login</Link>
+                <Link href="/admin" className="text-sm text-mist hover:text-chalk">Staff Login</Link>
                 <Link href="/start" className="flex items-center gap-1.5 text-sm font-bold bg-orange hover:bg-oranglit text-void px-4 py-2 rounded-lg">
                   Start Build →
                 </Link>

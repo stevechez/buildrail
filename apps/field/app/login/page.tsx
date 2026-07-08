@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 
 import { getHubLoginUrl } from "@/lib/hub";
 
@@ -10,6 +11,9 @@ import { getHubLoginUrl } from "@/lib/hub";
  * middleware.ts sends unauthenticated /dashboard visits straight to the
  * hub already; this page covers anyone who navigates to /login directly.
  */
-export default function LoginRedirectPage() {
-  redirect(getHubLoginUrl("/dashboard"));
+export default async function LoginRedirectPage() {
+  const headersList = await headers();
+  const proto = headersList.get("x-forwarded-proto") ?? "http";
+  const host = headersList.get("host") ?? "localhost:3001";
+  redirect(getHubLoginUrl(`${proto}://${host}/dashboard`));
 }
